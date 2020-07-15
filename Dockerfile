@@ -4,14 +4,11 @@
 ARG UBUNTU_VERSION
 FROM ubuntu:${UBUNTU_VERSION}
 
-# create normal user so that files in volumes is editable
-RUN useradd usr
-RUN mkdir -m 0777 /home/usr
-
 # prepare dependencies
-RUN apt update
-RUN apt upgrade -y
-RUN apt install -y curl gnupg2 lsb-release sudo # for convenience, this supports copied commands with sudo
+RUN apt update && apt upgrade -y && apt install -y curl gnupg2 lsb-release sudo
+
+# create normal user so that files in volumes is editable
+RUN useradd -m usr && echo "usr:usr" | chpasswd && usermod -aG sudo usr
 
 # install tzdata and keyboard to avoid interrupt
 # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
@@ -21,10 +18,9 @@ RUN DEBIAN_FRONTEND="noninteractive" apt -y install tzdata keyboard-configuratio
 # set up the repo
 RUN curl http://repo.ros2.org/repos.key | sudo apt-key add -
 RUN sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
-RUN apt update
 
 # install ros and two useful dependencies
 ARG CHOOSE_ROS_DISTRO
-RUN apt install -y ros-${CHOOSE_ROS_DISTRO}-desktop
-RUN apt install -y python3-rosdep2 python3-argcomplete
+RUN apt update && \
+    apt install -y ros-${CHOOSE_ROS_DISTRO}-desktop python3-rosdep2 python3-argcomplete
 RUN apt autoclean && apt clean
